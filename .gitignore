@@ -1,0 +1,6 @@
+deps/
+logs/
+bin/
+
+gateway.json
+.token
