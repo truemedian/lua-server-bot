@@ -189,7 +189,7 @@ client:on('messageCreate', function(message)
                 })
             end
         end
-    elseif message.content:find('LUA', 1, true) then
+    elseif message.content:find('%WLUA%W', 1) or message.content:startswith('LUA') or message.content:endswith('LUA') then
         if correction_timeout:getTime():toMinutes() > 2 then
             correction_timeout:reset()
 
