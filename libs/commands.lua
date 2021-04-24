@@ -57,7 +57,7 @@ Valid Sources:
         file = abridged,
         embed = {
             title = 'Run Output',
-            description = '```' .. output .. '```',
+            description = '```\n' .. output .. '```',
             footer = {text = 'Lua ' .. result.version},
         },
     })
