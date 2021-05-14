@@ -27,8 +27,8 @@ client:on('messageCreate', function(message)
             commands.process(message, cmd, arg)
         end
     elseif message.content:find('%WLUA%W', 1) or message.content:startswith('LUA') or message.content:endswith('LUA') then
-        if correction_timeout:getTime():toMinutes() > 2 then
-            local previous_messages = message.channel:getMessages(25)
+        if correction_timeout:getTime():toMinutes() > 15 then
+            local previous_messages = message.channel:getMessages(40)
             local has_correction = previous_messages:find(function(m)
                 return m.author == client.user and m.content == correction_autoresponse
             end)
