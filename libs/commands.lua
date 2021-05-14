@@ -1,6 +1,7 @@
 local discordia = require('discordia')
 local ffi = require('ffi')
 local uv = require('uv')
+local utf8 = require('utf8')
 
 local runner = require('runner.lua')
 local config = require('../config.lua')
@@ -48,9 +49,9 @@ Valid Sources:
     end
 
     local abridged = nil
-    if #output > 2025 then
+    if utf8.len(output) > 2025 then
         abridged = {'output.txt', output}
-        output = output:sub(1, 2025) .. '... [truncated]'
+        output = output:sub(1, utf8.offset(output, 2025)) .. '... [truncated]'
     end
 
     return message:reply({
