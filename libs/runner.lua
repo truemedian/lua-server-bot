@@ -1,9 +1,11 @@
 local http = require('coro-http')
 local lpeg = require('lpeg')
 local json = require('json')
+local uv = require('uv')
 
 local function format_http_error(url, res, masked)
-    return masked and ('<%s>: %d %s'):format(url, res.code, res.reason) or ('%s: %d %s'):format(url, res.code, res.reason)
+    return masked and ('<%s>: %d %s'):format(url, res.code, res.reason) or
+               ('%s: %d %s'):format(url, res.code, res.reason)
 end
 
 local function fetch(url)
@@ -16,7 +18,7 @@ local function fetch(url)
     end
 end
 
-local execute_api = 'https://emkc.org/api/v1/piston/execute'
+local execute_api = 'https://emkc.org/api/v2/piston/execute'
 
 lpeg.locale(lpeg)
 
@@ -81,27 +83,48 @@ local function run(arg, attachment)
         return nil, err
     end
 
-    local payload = json.encode({language = 'lua', source = source})
+    local payload = json.encode({
+        language = 'lua',
+        version = '5.4',
+        files = {{name = 'main.lua', content = source}},
+        run_timeout = 10000,
+        run_memory_limit = -1,
+    })
+
+    local start = uv.hrtime()
     local head, res = http.request('POST', execute_api, {{'Content-Type', 'application/json'}}, payload)
+    local stop = uv.hrtime()
 
     if head.code ~= 200 then
         return nil, format_http_error('execute', head)
     end
 
     local result = json.decode(res)
-    local output
 
-    if #result.stdout == 0 then
-        if #result.stderr == 0 then
-            output = 'No Output'
-        else
-            output = result.stderr
-        end
-    else
-        output = result.stdout
+    if result.message then
+        return nil, result.message
     end
 
-    return result, output
+    if result.run then
+        local output = result.run.output
+
+        if #output == 0 then
+            output = 'No Output'
+        end
+
+        local death = 'Killed'
+        if result.run.code then
+            death = 'Exited: ' .. result.run.code
+        elseif result.run.signal then
+            death = 'Killed: ' .. result.run.signal
+        end
+
+        death = string.format('%s in %d ms', death, (stop - start) / 1e6)
+
+        return death, output, result.version
+    else
+        return nil, 'An unknown error occurred.'
+    end
 end
 
 return {run = run}

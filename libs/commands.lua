@@ -43,7 +43,7 @@ Valid Sources:
         end
     end
 
-    local result, output = runner.run(arg, message.attachment)
+    local result, output, version = runner.run(arg, message.attachment)
     if not result then
         return message:reply('⚠ ' .. output)
     end
@@ -59,7 +59,8 @@ Valid Sources:
         embed = {
             title = 'Run Output',
             description = '```\n' .. output .. '```',
-            footer = {text = 'Lua ' .. result.version},
+            footer = {text = result},
+            author = {name = 'Lua ' .. version, icon_url = message.client.user.avatarURL},
         },
     })
 end)
