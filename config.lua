@@ -6,6 +6,7 @@ return {
 	token = assert(fs.readFileSync('.token')):trim(),
 
 	discordia = {
-		logFile = 'logs/discordia.log'
+		logFile = 'logs/discordia.log',
+		routeDelay = 100,
 	}
 }

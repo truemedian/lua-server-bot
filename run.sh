@@ -1,6 +1,6 @@
 #!/bin/bash
 
-RUN_SESSION_NAME="discord"
+RUN_SESSION_NAME="lsrv-bot"
 RUN_COMMAND="./bin/luvit init"
 RUN_ERRLOG="./logs/stderr.log"
 
