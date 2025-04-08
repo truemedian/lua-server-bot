@@ -26,19 +26,19 @@ client:on('messageCreate', function(message)
 
             commands.process(message, cmd, arg)
         end
-    elseif (message.content:find('%WLUA%W') or message.content:startswith('LUA') or message.content:endswith('LUA')) and not message.content:find('LUA_', 1, true) then
-        if correction_timeout:getTime():toMinutes() > 15 then
-            local previous_messages = message.channel:getMessages(40)
-            local has_correction = previous_messages:find(function(m)
-                return m.author == client.user and m.content == correction_autoresponse
-            end)
-
-            if not has_correction then
-                correction_timeout:reset()
-
-                message:reply(correction_autoresponse)
-            end
-        end
+--    elseif (message.content:find('%WLUA%W') or message.content:startswith('LUA') or message.content:endswith('LUA')) and not message.content:find('LUA_', 1, true) then
+--        if correction_timeout:getTime():toMinutes() > 15 then
+--            local previous_messages = message.channel:getMessages(40)
+--            local has_correction = previous_messages:find(function(m)
+--                return m.author == client.user and m.content == correction_autoresponse
+--            end)
+--
+--            if not has_correction then
+--                correction_timeout:reset()
+--
+--                message:reply(correction_autoresponse)
+--            end
+--        end
     end
 end)
 
