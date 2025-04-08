@@ -83,6 +83,7 @@ local function run(arg, attachment)
         return nil, err
     end
 
+    source = 'os.execute=nil;io.popen=nil;' .. source
     local payload = json.encode({
         language = 'lua',
         version = '5.4',
