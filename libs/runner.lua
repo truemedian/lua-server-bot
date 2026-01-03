@@ -56,7 +56,7 @@ local function run(arg, attachment)
     local source, err
 
     if arg:startswith('```') then
-        source = arg:match('^```[^\n]*\n(.+)```') or arg:match('^```(.+)```')
+        source = arg:match('^```%S*\n(.+)```') or arg:match('^```(.+)```')
     elseif arg:startswith('`') then
         source = arg:match('^`([^`]+)`')
     elseif arg:startswith('http') then
