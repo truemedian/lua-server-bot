@@ -18,7 +18,8 @@ local function fetch(url)
     end
 end
 
-local execute_api = 'https://emkc.org/api/v2/piston/execute'
+-- operated by @fathom_b, only accesible via whitelist
+local execute_api = 'http://vps-a150471c.vps.ovh.us:6967/api/v2/execute'
 
 lpeg.locale(lpeg)
 
@@ -55,6 +56,15 @@ end
 local function run(arg, attachment)
     local source, err
 
+    local version = arg:match('^5.%d+') or '5.5'
+    arg = arg:match('^%d.%d%s*(.+)') or arg
+
+    if tonumber(version) < 5.1 then
+        version = '5.1'
+    elseif tonumber(version) > 5.5 then
+        version = '5.5'
+    end
+
     if arg:startswith('```') then
         source = arg:match('^```%S*\n(.+)```') or arg:match('^```(.+)```')
     elseif arg:startswith('`') then
@@ -86,7 +96,7 @@ local function run(arg, attachment)
     source = 'os.execute=nil;io.popen=nil;' .. source
     local payload = json.encode({
         language = 'lua',
-        version = '5.4',
+        version = version,
         files = {{name = 'main.lua', content = source}},
         run_timeout = 10000,
         run_memory_limit = -1,

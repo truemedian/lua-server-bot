@@ -9,8 +9,8 @@ local config = require('../config.lua')
 local timers = {}
 local commands = {}
 
-local function add_command(name, usage, help, fn)
-    table.insert(commands, {name = name, usage = usage:trim(), help = help:trim(), fn = fn})
+local function add_command(name, usage, help, fn, hide)
+    table.insert(commands, {name = name, usage = usage:trim(), help = help:trim(), fn = fn, hide = hide})
 end
 
 timers.uptime = discordia.Stopwatch()
@@ -19,7 +19,7 @@ timers.uptime:start()
 timers.runner = discordia.Stopwatch()
 timers.runner:start()
 
-add_command('run', 'run <source>', [[
+add_command('run', 'run [5.x] <source>', [[
 Runs lua code from a source. Uses emkc.org's piston api.
 
 Valid Sources:
@@ -105,15 +105,144 @@ Provides information about commands possible using the bot.
     local longest_usage = 0
 
     for _, tbl in ipairs(commands) do
-        longest_usage = math.max(longest_usage, #tbl.usage)
-    end
+		if not tbl.hide then
+			longest_usage = math.max(longest_usage, #tbl.usage)
+		end
+	end
 
     for _, tbl in ipairs(commands) do
-        table.insert(cmds, config.prefix .. tbl.usage:pad(longest_usage + 3) .. tbl.help)
-    end
+        if not tbl.hide then
+			table.insert(cmds, config.prefix .. tbl.usage:pad(longest_usage + 3) .. tbl.help)
+		end
+	end
 
     message:reply('```' .. table.concat(cmds, '\n\n') .. '```')
 end)
+
+local function subsequence_match(subseq, str)
+    local matches = 0
+
+    for i = 1, #str do
+        if string.byte(subseq, matches + 1) == string.byte(str, i) then
+            matches = matches + 1
+        end
+    end
+
+    return matches == #subseq
+end
+
+local function subsequences(start, prefix, str, left)
+    if left == 0 then
+        coroutine.yield(prefix)
+    else
+        for i = start, #str do
+            subsequences(i + 1, prefix .. str:sub(i, i), str, left - 1)
+        end
+    end
+end
+
+add_command('member', 'member <user>', [[
+Provides information about a member. If no user is provided, will provide information about the message author.
+]], function(message, arg)
+	local user = arg:match('<@!?(%d+)>') or arg
+
+	if not user then
+		user = message.author
+	else
+		user = message.guild:getMember(user)
+	end
+
+	if not user then
+		return message:reply('⚠ user not found')
+	end
+
+    local smallest = ''
+    for n = 1, #user.username do
+        local iter = coroutine.wrap(function() subsequences(1, '', user.username, n) end)
+        for s in iter do
+            local found = false
+
+            for check in message.guild.members:iter() do
+                if check ~= user and subsequence_match(s, check.username) then
+                    found = true
+                    break
+                end
+            end
+
+            if not found then
+                smallest = s
+                break
+            end
+        end
+
+        if smallest ~= '' then
+            break
+        end
+    end
+
+    if smallest == '' then
+        smallest = user.username
+    end
+
+	message:reply(string.format('```\n%s %s\n@%s\n```', user.username, user.id, smallest))
+end)
+
+add_command('exec', 'exec', [[]], function(message, arg)
+	if message.author ~= message.client.owner then
+		return
+	end
+
+	local source
+
+	if arg:sub(1, 3) == '```' then
+		source = arg:match('```%S*(.*)```')
+	else
+		source = arg
+	end
+
+	if not source then
+		return message:reply('⚠  no source')
+	end
+
+	local lines = {}
+	local function env_print(...)
+		local t = {}
+		for i = 1, select('#', ...) do
+			t[i] = tostring(select(i, ...))
+		end
+		table.insert(lines, table.concat(t, '\t'))
+	end
+
+	local env = setmetatable({
+		message = message,
+		guild = message.guild,
+		author = message.author,
+
+		discordia = discordia,
+		client = message.client,
+
+		print = env_print,
+	}, { __index = _G })
+
+	local fn, err = load(source, '=discord', 't', env)
+	if not fn then
+		return message:reply('⚠  ```\n' .. err .. '```')
+	end
+
+	local success, ret = pcall(fn)
+	if not success then
+		return message:reply('⚠  ```\n' .. ret .. '```')
+	end
+
+	if ret ~= nil then
+		env_print(ret)
+	end
+
+	local out = table.concat(lines, '\n')
+	if #out > 0 then
+		return message:reply('```\n' .. out .. '```')
+	end
+end, true)
 
 local function process(message, cmd, arg)
     for _, tbl in ipairs(commands) do

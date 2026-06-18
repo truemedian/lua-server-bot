@@ -8,5 +8,7 @@ return {
 	discordia = {
 		logFile = 'logs/discordia.log',
 		routeDelay = 100,
+		cacheAllMembers = true,
+		gatewayIntents = 0x8203,
 	}
 }
