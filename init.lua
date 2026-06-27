@@ -6,6 +6,9 @@ local commands = require("commands.lua")
 
 local client = discordia.Client(config.discordia)
 
+local fs = require("fs")
+local banlist_fd = assert(fs.openSync('banlist.txt', 'a'))
+
 client:on("messageCreate", function(message)
     if not message.guild or message.author.bot then
         return -- ignore dms, self and other bots
@@ -37,6 +40,7 @@ client:on("messageCreate", function(message)
             end
 
             client:getChannel('939400077569572894'):send('<#1507820139960209479> soft-banned <@' .. message.author.id .. '>')
+            fs.writeSync(banlist_fd, message.author.id .. '\n')
         end
     end
 end)

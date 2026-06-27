@@ -93,7 +93,7 @@ local function run(arg, attachment)
         return nil, err
     end
 
-    source = 'os.execute=nil;io.popen=nil;' .. source
+    -- source = 'os.execute=nil;io.popen=nil;' .. source
     local payload = json.encode({
         language = 'lua',
         version = version,
@@ -103,8 +103,12 @@ local function run(arg, attachment)
     })
 
     local start = uv.hrtime()
-    local head, res = http.request('POST', execute_api, {{'Content-Type', 'application/json'}}, payload)
+    local good, head, res = pcall(http.request, 'POST', execute_api, {{'Content-Type', 'application/json'}}, payload)
     local stop = uv.hrtime()
+
+    if not good then
+        return nil, '⚠ failed to contact execution server'
+    end
 
     if head.code ~= 200 then
         return nil, format_http_error('execute', head)
